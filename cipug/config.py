@@ -48,6 +48,7 @@ class Config(dict):
         "SERVICES_FILTER_EXCLUDE": ("", str),
         "COMPOSE_TOOL": ("podman-compose", str),
         "CONTAINER_TOOL": ("podman", str),
+        "SKOPEO_CONTAINER": ("false", Str2Bool),
         "SERVICE_STOP_START": ("true", Str2Bool),
         "STOP_START_METHOD": ("compose", Literally(["compose", "systemd-system", "systemd-user"])),
         "SERVICE_SNAPSHOT": ("true", Str2Bool),

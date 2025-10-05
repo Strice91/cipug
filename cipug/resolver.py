@@ -4,6 +4,7 @@ import subprocess
 
 from .log import log
 from .config import Config
+from .utils import get_skopeo_container_call
 
 class Image_Version_Resolver():
     """Uses skopeo to resolve container tags like ":latest" to their respective
@@ -15,6 +16,7 @@ class Image_Version_Resolver():
         self.cache_file = config["CACHE_LOCATION"]
         self.cache_duration = config["CACHE_DURATION"]
         self.cache = {}
+        self.call = "skopeo" if not config["SKOPEO_CONTAINER"] else get_skopeo_container_call(config["CONTAINER_TOOL"])
         log.vverbose(f"Image-Version-Resolver cache file is set to {self.cache_file}")
         if self.cache_file.is_file():
             # A cache file exists already
@@ -46,7 +48,7 @@ class Image_Version_Resolver():
 
         # If there's no cache entry, or it is incomplete, or too old:
         info = json.loads(
-            subprocess.check_output(["skopeo", "inspect", "--no-tags", "docker://"+name])
+            subprocess.check_output([*self.call.split(" "), "inspect", "--no-tags", "docker://"+name])
         )
         result = f'{info["Name"]}@{info["Digest"]}'
 

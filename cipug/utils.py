@@ -7,6 +7,11 @@ from .log import log
 from .config import Config
 from . import exit_code
 
+def get_skopeo_container_call(container_tool) -> str:
+    image = "docker://" if container_tool == "podman" else ""
+    image += "quay.io/skopeo/stable:latest"
+    tool = f"{container_tool} run --rm {image}"
+    return tool
 
 def get_services() -> list[Path]:
     config = Config()
@@ -65,8 +70,10 @@ def get_services() -> list[Path]:
 def check_dependencies():
     """Check if the required utilities can be run"""
     config = Config()
-    tools = ["skopeo"]
-
+    tools = list()
+    # Container Tool
+    tools.append(config["CONTAINER_TOOL"])
+    # Compose Tool
     if config["SERVICE_STOP_START"]:
         tools.append(config["COMPOSE_TOOL"].split(" ")[0])
     else:
@@ -74,7 +81,7 @@ def check_dependencies():
             "Skipping looking for a compose tool, as stopping "
             "and starting of services is disabled"
         )
-
+    # Snapshot Tool
     if config["SERVICE_SNAPSHOT"]:
         tools.append("snapper")
     else:
@@ -82,10 +89,14 @@ def check_dependencies():
             "Skipping looking for snapper, as snapshotting of "
             "services is disabled"
         )
+    # Skopeo
+    skopeo = "skopeo" if not config["SKOPEO_CONTAINER"] else get_skopeo_container_call(config["CONTAINER_TOOL"])
+    tools.append(skopeo)
 
     for tool in tools:
         try:
-            out = subprocess.check_output([tool, "--version"]).decode("utf-8").strip()
+            # Make sure all tool sub commands are a separate string
+            out = subprocess.check_output([*tool.split(" "), "--version"]).decode("utf-8").strip()
             log.vverbose(f"Found tool: {out}")
         except FileNotFoundError:
             log.error(f"Could not find tool \"{tool}\", cannot proceed.", exit_code=exit_code.SYSTEM_ERROR)
