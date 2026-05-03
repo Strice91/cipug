@@ -18,8 +18,13 @@ lintfix:
 types:
 	uv run basedpyright cipug tests
 
-tests:
-	uv run pytest tests
+test_mocked:
+	uv run pytest tests/test_A_unit_tests tests/test_B_end2end_tests
+
+test_real:
+	uv run pytest tests/test_C_real_tests
+
+tests: test_mocked test_real
 
 quality:
 	make lint
