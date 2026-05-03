@@ -74,7 +74,7 @@ jobs:
       - name: Setup BTRFS and ZFS for testing
         run: |
           sudo apt-get update
-          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y btrfs-progs zfsutils-linux skopeo
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y btrfs-progs zfsutils-linux skopeo snapper
           
           # Setup BTRFS
           truncate -s 2G /tmp/btrfs-test.img
@@ -82,9 +82,16 @@ jobs:
           mkdir -p /tmp/btrfs_mount
           sudo mount -t btrfs -o loop /tmp/btrfs-test.img /tmp/btrfs_mount
           
+          # Configure Snapper for BTRFS
+          sudo snapper -c envconf create-config /tmp/btrfs_mount
+          sudo snapper -c envconf set-config ALLOW_USERS=runner SYNC_ACL=yes
+          sudo setfacl -m u:runner:rwx /tmp/btrfs_mount/.snapshots
+          
           # Setup ZFS
           truncate -s 2G /tmp/zfs-test.img
           sudo zpool create testpool /tmp/zfs-test.img
+          sudo zfs allow runner snapshot,mount testpool
+          sudo chmod a+rwx /testpool
 
       - name: Verify Environment and Filesystems
         run: |
